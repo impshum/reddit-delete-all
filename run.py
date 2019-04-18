@@ -7,7 +7,7 @@ from halo import Halo
 # DO NOT EDIT ABOVE THIS LINE
 
 test_mode = True # Self explanitory
-target_time = False  # Set to epoch timestamp to set date to get to/from
+target_time = False  # Set to epoch timestamp to set date to get to/from e.g 1547149497
 target_time_before = False  # Set to True to get content from before time set
 
 client_id = 'XXXX'
