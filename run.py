@@ -6,7 +6,9 @@ from halo import Halo
 
 # DO NOT EDIT ABOVE THIS LINE
 
-test_mode = False
+test_mode = True # Self explanitory
+target_time = False  # Set to epoch timestamp to set date to get to/from
+target_time_before = False  # Set to True to get content from before time set
 
 client_id = 'XXXX'
 client_secret = 'XXXX'
@@ -36,14 +38,7 @@ def get_ids_pushshift(switch):
         q = list(api.search_comments(author=reddit_user))
     elif switch == 'submissions':
         q = list(api.search_submissions(author=reddit_user))
-    c = 0
-    for x in q:
-        try:
-            if not db.exists(x.id):
-                c += 1
-                db.set(x.id, switch)
-        except Exception as e:
-            print(e)
+    c = do_db(q, switch)
     msg = 'Found {} new {} on Pushshift'.format(c, switch)
     spinner.text = msg
     sleep(1)
@@ -58,15 +53,36 @@ def get_ids_praw(switch):
         q = reddit.redditor(reddit_user).comments.new(limit=None)
     elif switch == 'submissions':
         q = reddit.redditor(reddit_user).submissions.new(limit=None)
-    c = 0
-    for x in q:
-        if not db.exists(x.id):
-            c += 1
-            db.set(x.id, switch)
+    c = do_db(q, switch)
     msg = 'Found {} new {} on Reddit'.format(c, switch)
     spinner.text = msg
     sleep(1)
     db.dump()
+
+
+def do_db(q, switch):
+    c = 0
+    for x in q:
+        try:
+            if target_time:
+                if target_time_before:
+                    if x.created_utc < target_time:
+                        if not db.exists(x.id):
+                            c += 1
+                            db.set(x.id, switch)
+                else:
+                    if x.created_utc > target_time:
+                        if not db.exists(x.id):
+                            c += 1
+                            db.set(x.id, switch)
+            else:
+                if not db.exists(x.id):
+                    c += 1
+                    db.set(x.id, switch)
+
+        except Exception as e:
+            print(e)
+    return c
 
 
 def delete_all():
@@ -85,7 +101,10 @@ def delete_all():
             c += 1
             msg = 'Deleting {}'.format(c, switch)
             spinner.text = msg
-            sleep(2)
+            if not test_mode:
+                sleep(2)
+            else:
+                sleep(0.05)
             db.set(x, True)
             db.dump()
 
